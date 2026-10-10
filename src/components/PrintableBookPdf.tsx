@@ -123,38 +123,39 @@ export const PrintableBookPdf: React.FC<PrintableBookPdfProps> = ({
               {/* Solved Questions Section Header */}
               <div
                 className="text-xs font-bold pb-2 mb-3 flex items-center justify-between"
-                style={{ color: '#000000', borderBottom: '2px solid #000000' }}
+                style={{ color: '#000000', borderBottom: '2.5px solid #000000' }}
               >
                 <span className="flex items-center gap-2">
-                  <span className="font-extrabold text-[13px]">
-                    {pdfMode === 'answers-only' ? 'جدول الإجابات النموذجية السريعة' : 'قائمة الإجابات النموذجية'}
+                  <span className="font-black text-[13.5px]">
+                    {pdfMode === 'answers-only' ? 'جدول الإجابات النموذجية المعتمدة' : 'قائمة الإجابات النموذجية المعتمدة'}
                   </span>
                   <span
-                    className="text-[10px] px-2 py-0.5 rounded font-bold"
+                    className="text-[10px] px-2.5 py-0.5 rounded font-black tracking-wide"
                     style={{
-                      backgroundColor: pdfMode === 'answers-only' ? '#047857' : '#0f172a',
+                      backgroundColor: pdfMode === 'answers-only' ? '#047857' : '#000000',
                       color: '#ffffff',
                     }}
                   >
-                    {pdfMode === 'answers-only' ? 'إجابات فقط (موجزة)' : 'حل مفصل'}
+                    {pdfMode === 'answers-only' ? 'إجابات فقط (موجزة وعالية الدقة)' : 'حل مفصل وشامل'}
                   </span>
                 </span>
-                <span className="text-[11px] font-bold" style={{ color: '#0f172a' }}>
+                <span className="text-[11.5px] font-black" style={{ color: '#000000' }}>
                   عدد الأسئلة: {sol.questions.length}
                 </span>
               </div>
 
               {/* Solved Questions List (Compact & Cleanly Formatted) */}
               {pdfMode === 'answers-only' ? (
-                /* === OPTION A: ANSWERS ONLY (رقم السؤال والإجابة فقط - خفيف جداً وموجز) === */
-                <div className="space-y-2">
+                /* === OPTION A: ANSWERS ONLY (رقم السؤال والإجابة فقط - خفيف جداً وموجز وواضح جداً) === */
+                <div className="space-y-2.5">
                   {sol.questions.map((q, qIndex) => (
                     <div
                       key={q.id}
-                      className="rounded-lg p-2.5 flex items-start gap-3"
+                      className="rounded-lg p-3 flex items-start gap-3"
                       style={{
                         backgroundColor: '#ffffff',
-                        border: '1.5px solid #0f172a',
+                        border: '2px solid #000000',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
                         breakInside: 'avoid',
                         pageBreakInside: 'avoid',
                         marginBottom: '8px',
@@ -162,42 +163,43 @@ export const PrintableBookPdf: React.FC<PrintableBookPdfProps> = ({
                     >
                       {/* Question Number Badge */}
                       <div
-                        className="shrink-0 px-2 py-1 rounded text-center font-black"
+                        className="shrink-0 px-2.5 py-1 rounded text-center font-black"
                         style={{
-                          backgroundColor: '#0f172a',
+                          backgroundColor: '#000000',
                           color: '#ffffff',
-                          minWidth: '55px',
+                          minWidth: '60px',
                         }}
                       >
-                        <div className="text-[11px] font-bold">
+                        <div className="text-[12px] font-black tracking-wide">
                           {q.questionNumber || `سؤال ${qIndex + 1}`}
                         </div>
                       </div>
 
                       {/* Answer Content */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-baseline gap-2 flex-wrap">
+                        <div className="flex items-baseline gap-2.5 flex-wrap">
                           <span
-                            className="text-[11px] font-extrabold px-1.5 py-0.5 rounded"
-                            style={{ backgroundColor: '#dcfce7', color: '#14532d', border: '1px solid #86efac' }}
+                            className="text-[11.5px] font-black px-2 py-0.5 rounded"
+                            style={{ backgroundColor: '#059669', color: '#ffffff' }}
                           >
                             الإجابة:
                           </span>
                           <span
-                            className="font-extrabold text-[13.5px]"
+                            className="font-black text-[14px]"
                             style={{ color: '#000000', lineHeight: '1.5', wordBreak: 'break-word' }}
                           >
                             {q.finalAnswer}
                           </span>
                         </div>
 
-                        {/* If there is a very short key summary note */}
-                        {q.explanation && q.explanation.length < 80 && (
+                        {/* If there is a key summary note */}
+                        {q.explanation && (
                           <div
-                            className="text-[11px] font-semibold mt-1"
-                            style={{ color: '#334155' }}
+                            className="text-[11.5px] font-bold mt-1.5 pt-1"
+                            style={{ color: '#1e293b', borderTop: '1px dashed #cbd5e1' }}
                           >
-                            ℹ️ {q.explanation}
+                            <span className="font-black text-[#000000]">ملاحظة: </span>
+                            {q.explanation}
                           </div>
                         )}
                       </div>
@@ -206,46 +208,46 @@ export const PrintableBookPdf: React.FC<PrintableBookPdfProps> = ({
                 </div>
               ) : (
                 /* === OPTION B: FULL DETAILED QUESTIONS & SOLUTIONS === */
-                <div className="space-y-3">
+                <div className="space-y-3.5">
                   {sol.questions.map((q, qIndex) => (
                     <div
                       key={q.id}
-                      className="rounded-lg p-3 sm:p-3.5 space-y-2"
+                      className="rounded-lg p-3 sm:p-4 space-y-2.5"
                       style={{
                         backgroundColor: '#ffffff',
-                        border: '1.5px solid #334155',
+                        border: '2px solid #000000',
                         breakInside: 'avoid',
                         pageBreakInside: 'avoid',
                         marginBottom: isCompact ? '12px' : '16px',
                       }}
                     >
                       {/* Question Header & Prompt */}
-                      <div className="flex items-start gap-2">
+                      <div className="flex items-start gap-2.5">
                         <span
-                          className="shrink-0 w-6 h-6 rounded text-[11px] font-black flex items-center justify-center mt-0.5"
-                          style={{ backgroundColor: '#0f172a', color: '#ffffff' }}
+                          className="shrink-0 w-7 h-7 rounded text-[12px] font-black flex items-center justify-center mt-0.5"
+                          style={{ backgroundColor: '#000000', color: '#ffffff' }}
                         >
                           {qIndex + 1}
                         </span>
                         <div className="w-full">
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-2">
                             <span
-                              className="font-black text-[12px]"
+                              className="font-black text-[13px]"
                               style={{ color: '#000000' }}
                             >
                               {q.questionNumber || `سؤال ${qIndex + 1}`}
                             </span>
                             {q.questionType && (
                               <span
-                                className="text-[10px] px-1.5 py-0.2 rounded font-bold"
-                                style={{ backgroundColor: '#e2e8f0', color: '#0f172a' }}
+                                className="text-[10px] px-2 py-0.5 rounded font-black"
+                                style={{ backgroundColor: '#e2e8f0', color: '#000000' }}
                               >
                                 {q.questionType}
                               </span>
                             )}
                           </div>
                           <p
-                            className={isCompact ? 'text-[12.5px] font-bold mt-1' : 'text-sm font-bold mt-1'}
+                            className={isCompact ? 'text-[13px] font-black mt-1' : 'text-sm font-black mt-1'}
                             style={{ color: '#000000', lineHeight: isCompact ? '1.65' : '1.8' }}
                           >
                             {q.originalText}
@@ -256,16 +258,16 @@ export const PrintableBookPdf: React.FC<PrintableBookPdfProps> = ({
                       {/* Options if MCQ */}
                       {q.options && q.options.length > 0 && (
                         <div
-                          className="mr-8 text-[11px] grid grid-cols-2 gap-1 p-2 rounded-md"
+                          className="mr-9 text-[12px] grid grid-cols-2 gap-1.5 p-2.5 rounded-md"
                           style={{
                             backgroundColor: '#f8fafc',
-                            border: '1px solid #cbd5e1',
-                            color: '#0f172a',
+                            border: '1.5px solid #000000',
+                            color: '#000000',
                             lineHeight: '1.5',
                           }}
                         >
                           {q.options.map((opt, oIdx) => (
-                            <div key={oIdx} className="p-0.5 rounded font-bold">
+                            <div key={oIdx} className="p-0.5 font-bold">
                               {opt}
                             </div>
                           ))}
@@ -273,23 +275,23 @@ export const PrintableBookPdf: React.FC<PrintableBookPdfProps> = ({
                       )}
 
                       {/* Approved Final Answer Box (Clean, Distinct, Crisp Emerald Box) */}
-                      <div className="mr-8">
+                      <div className="mr-9">
                         <div
-                          className="rounded-md p-2.5"
+                          className="rounded-md p-3"
                           style={{
                             backgroundColor: '#ecfdf5',
-                            border: '2px solid #059669',
-                            color: '#064e3b',
+                            border: '2px solid #047857',
+                            color: '#022c22',
                           }}
                         >
-                          <div className="flex items-center gap-1.5 mb-0.5">
-                            <span className="font-black text-[11.5px]" style={{ color: '#064e3b' }}>
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span className="font-black text-[12px]" style={{ color: '#047857' }}>
                               ✅ الإجابة النهائية المعتمدة:
                             </span>
                           </div>
                           <div
-                            className={isCompact ? 'font-black text-[13.5px]' : 'font-black text-base'}
-                            style={{ color: '#022c22', lineHeight: '1.5' }}
+                            className={isCompact ? 'font-black text-[14px]' : 'font-black text-[16px]'}
+                            style={{ color: '#000000', lineHeight: '1.5' }}
                           >
                             {q.finalAnswer}
                           </div>
@@ -298,13 +300,13 @@ export const PrintableBookPdf: React.FC<PrintableBookPdfProps> = ({
 
                       {/* Step-by-step Solution */}
                       {q.steps && q.steps.length > 0 && (
-                        <div className="mr-8 text-[11.5px]" style={{ color: '#0f172a' }}>
-                          <strong className="block mb-1 font-black text-[11.5px]" style={{ color: '#000000' }}>
+                        <div className="mr-9 text-[12px]" style={{ color: '#000000' }}>
+                          <strong className="block mb-1 font-black text-[12px]" style={{ color: '#000000' }}>
                             خطوات الحل والبرهان:
                           </strong>
-                          <ol className="list-decimal list-inside space-y-0.5">
+                          <ol className="list-decimal list-inside space-y-1">
                             {q.steps.map((step, sIdx) => (
-                              <li key={sIdx} className="font-semibold" style={{ lineHeight: '1.65', color: '#0f172a' }}>
+                              <li key={sIdx} className="font-bold" style={{ lineHeight: '1.65', color: '#000000' }}>
                                 {step}
                               </li>
                             ))}
@@ -315,15 +317,15 @@ export const PrintableBookPdf: React.FC<PrintableBookPdfProps> = ({
                       {/* Explanation */}
                       {q.explanation && (
                         <div
-                          className="mr-8 text-[11px] p-2 rounded-md font-medium"
+                          className="mr-9 text-[11.5px] p-2.5 rounded-md font-bold"
                           style={{
                             backgroundColor: '#f8fafc',
-                            border: '1px solid #cbd5e1',
-                            color: '#0f172a',
+                            border: '1.5px solid #cbd5e1',
+                            color: '#000000',
                             lineHeight: '1.6',
                           }}
                         >
-                          <strong className="font-bold" style={{ color: '#000000' }}>الشرح والتعليل: </strong>
+                          <strong className="font-black" style={{ color: '#000000' }}>الشرح والتعليل: </strong>
                           {q.explanation}
                         </div>
                       )}
@@ -331,10 +333,10 @@ export const PrintableBookPdf: React.FC<PrintableBookPdfProps> = ({
                       {/* Note / Tip */}
                       {q.notesOrTips && (
                         <div
-                          className="mr-8 text-[10.5px] p-1.5 rounded-md font-semibold"
+                          className="mr-9 text-[11px] p-2 rounded-md font-bold"
                           style={{
                             backgroundColor: '#fffbeb',
-                            border: '1px solid #f59e0b',
+                            border: '1.5px solid #d97706',
                             color: '#78350f',
                             lineHeight: '1.5',
                           }}

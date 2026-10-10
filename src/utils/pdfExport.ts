@@ -110,20 +110,26 @@ export async function generateAndDownloadPdf(
     }
 
     if (element) {
+      // Ensure Cairo and system fonts are ready before rasterizing
+      if (document.fonts) {
+        await document.fonts.ready;
+      }
+
       const canvas = await html2canvas(element, {
-        scale: 2.0, // High-DPI 2x scale: crisp sharp text with zero fuzziness or faintness
+        scale: 3.0, // Ultra-sharp 3x Retina resolution for razor-sharp crystal-clear text
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-        windowWidth: 1200, // Forces desktop layout queries (no mobile squeezing)
+        imageTimeout: 15000,
+        windowWidth: 1200, // Desktop rendering fidelity
         onclone: (clonedDoc) => {
           // 1. Sanitize modern color functions (oklch, oklab, lch, color-mix) in all style elements
           const sanitizeColors = (cssText: string) =>
             cssText
-              .replace(/oklch\([^)]*\)/gi, '#0f172a')
-              .replace(/oklab\([^)]*\)/gi, '#0f172a')
-              .replace(/lch\([^)]*\)/gi, '#0f172a')
-              .replace(/color-mix\([^)]*\)/gi, '#0f172a');
+              .replace(/oklch\([^)]*\)/gi, '#000000')
+              .replace(/oklab\([^)]*\)/gi, '#000000')
+              .replace(/lch\([^)]*\)/gi, '#000000')
+              .replace(/color-mix\([^)]*\)/gi, '#000000');
 
           const styleTags = clonedDoc.querySelectorAll('style');
           styleTags.forEach((tag) => {
@@ -152,11 +158,14 @@ export async function generateAndDownloadPdf(
             targetEl.style.display = 'block';
             targetEl.style.opacity = '1';
             targetEl.style.visibility = 'visible';
+            targetEl.style.color = '#000000';
+            targetEl.style.backgroundColor = '#ffffff';
           }
 
-          // 4. Inject strict print style override with strong high-contrast typography
+          // 4. Inject strict print style override with strong high-contrast solid typography
           const printStyle = clonedDoc.createElement('style');
           printStyle.textContent = `
+            @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap');
             #${elementId} {
               width: 794px !important;
               min-width: 794px !important;
@@ -174,6 +183,9 @@ export async function generateAndDownloadPdf(
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
             }
+            #${elementId} p, #${elementId} span, #${elementId} div, #${elementId} h1, #${elementId} h2, #${elementId} strong, #${elementId} li {
+              text-shadow: none !important;
+            }
           `;
           clonedDoc.head.appendChild(printStyle);
         },
@@ -188,10 +200,11 @@ export async function generateAndDownloadPdf(
         if (pdfPageCount > 0) {
           pdf.addPage('a4', 'portrait');
         }
-        const imgData = canvas.toDataURL('image/jpeg', 0.98);
+        // Use lossless PNG for pin-sharp, zero-blur text & numbers
+        const imgData = canvas.toDataURL('image/png');
         const imgMmHeight = (canvas.height * pdfWidth) / canvas.width;
         // Place full-width at (0, 0)
-        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, Math.min(imgMmHeight, pdfHeight));
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, Math.min(imgMmHeight, pdfHeight), undefined, 'FAST');
         pdfPageCount++;
       } else {
         // Content exceeds one A4 page: slice cleanly into multiple A4 pages at FULL WIDTH!
@@ -223,9 +236,10 @@ export async function generateAndDownloadPdf(
               0, 0, canvas.width, sliceHeight
             );
 
-            const sliceData = sliceCanvas.toDataURL('image/jpeg', 0.98);
+            // Lossless PNG for crisp contrast
+            const sliceData = sliceCanvas.toDataURL('image/png');
             const sliceMmHeight = (sliceHeight * pdfWidth) / canvas.width;
-            pdf.addImage(sliceData, 'JPEG', 0, 0, pdfWidth, Math.min(sliceMmHeight, pdfHeight));
+            pdf.addImage(sliceData, 'PNG', 0, 0, pdfWidth, Math.min(sliceMmHeight, pdfHeight), undefined, 'FAST');
           }
 
           sliceCanvas.width = 0;
