@@ -54,6 +54,8 @@ export default function App() {
   } | null>(null);
 
   const [activeTab, setActiveTab] = useState<'workspace' | 'pdf-preview'>('workspace');
+  const [pdfFontSize, setPdfFontSize] = useState<'compact' | 'standard'>('compact');
+  const [showPdfPageThumbnail, setShowPdfPageThumbnail] = useState<boolean>(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
   const [refineQuestion, setRefineQuestion] = useState<QuestionItem | null>(null);
   const [showCelebrationBanner, setShowCelebrationBanner] = useState<boolean>(false);
@@ -675,25 +677,65 @@ export default function App() {
             {/* Mode 2: PDF Preview Mode */}
             {activeTab === 'pdf-preview' && (
               <div className="space-y-4">
-                <div className="bg-white border border-slate-200 p-4 rounded-xl flex items-center justify-between text-xs text-slate-700 shadow-xs no-print">
+                <div className="bg-white border border-slate-200 p-3.5 sm:p-4 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs text-slate-700 shadow-xs no-print">
                   <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-emerald-700" />
-                    <span>
-                      معاينة المستند الجاهز: كل صفحة أدناه تمثل ورقة A4 مستقلة تقابل صفحة الكتاب
-                      الأصلية
-                    </span>
+                    <FileText className="w-4 h-4 text-emerald-700 shrink-0" />
+                    <div>
+                      <span className="font-bold text-slate-900 block sm:inline">
+                        مستند الإجابات النموذجية فقط:
+                      </span>{' '}
+                      <span className="text-slate-600">
+                        تم إزالة صور المعاينة وتصغير الخط ليكون مدمجاً ومناسباً لصفحات A4.
+                      </span>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => setIsExportModalOpen(true)}
-                    className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
-                  >
-                    <Printer className="w-3.5 h-3.5" />
-                    <span>تنزيل أو طباعة الملف الآن</span>
-                  </button>
+
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {/* Font Size Toggle */}
+                    <button
+                      type="button"
+                      onClick={() => setPdfFontSize((prev) => (prev === 'compact' ? 'standard' : 'compact'))}
+                      className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
+                        pdfFontSize === 'compact'
+                          ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                          : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
+                      }`}
+                      title="التبديل بين الخط المدمج الصغير والخط القياسي"
+                    >
+                      {pdfFontSize === 'compact' ? '🔍 الخط: مدمج صغير' : '🔎 الخط: قياسي'}
+                    </button>
+
+                    {/* Thumbnail Toggle */}
+                    <button
+                      type="button"
+                      onClick={() => setShowPdfPageThumbnail((prev) => !prev)}
+                      className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
+                        showPdfPageThumbnail
+                          ? 'bg-blue-50 border-blue-300 text-blue-800'
+                          : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'
+                      }`}
+                      title="إظهار أو إخفاء صورة الصفحة الأصلية من الـ PDF"
+                    >
+                      {showPdfPageThumbnail ? '🖼️ معاينة الصفحة: مفعلة' : '📄 إجابات فقط (بدون صور)'}
+                    </button>
+
+                    {/* Open Export Modal */}
+                    <button
+                      onClick={() => setIsExportModalOpen(true)}
+                      className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                      <span>تنزيل أو طباعة الملف</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* The Printable document */}
-                <PrintableBookPdf pages={pages} />
+                <PrintableBookPdf
+                  pages={pages}
+                  fontSize={pdfFontSize}
+                  showPageThumbnail={showPdfPageThumbnail}
+                />
               </div>
             )}
           </div>
@@ -705,10 +747,24 @@ export default function App() {
             className="fixed -left-[9999px] top-0 pointer-events-none opacity-0 select-none print:static print:left-auto print:opacity-100 print:pointer-events-auto print:block"
             style={{ width: '794px' }}
           >
-            <PrintableBookPdf pages={pages} />
+            <PrintableBookPdf
+              pages={pages}
+              fontSize={pdfFontSize}
+              showPageThumbnail={showPdfPageThumbnail}
+            />
           </div>
         )}
       </main>
+
+      {/* App Footer */}
+      <footer className="mt-auto py-6 border-t border-slate-200/80 bg-white/70 backdrop-blur-xs text-center text-xs text-slate-500 no-print">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <span>حلول كراستي · المنصة الأكاديمية الذكية لحل صفحات وتدريبات الكتب</span>
+          <span className="font-semibold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
+            Made by Mazen Mohamed
+          </span>
+        </div>
+      </footer>
 
       {/* Refine Question AI Modal */}
       <RefineQuestionModal

@@ -167,13 +167,13 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, pages
               </div>
               <div>
                 <div className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
-                  <span>تحميل ملف PDF مدمج ومفصل (.pdf)</span>
+                  <span>تحميل ملف PDF مدمج للإجابات النموذجية (.pdf)</span>
                   <span className="text-[10px] bg-emerald-500 text-slate-950 font-extrabold px-2 py-0.5 rounded-full">
                     الخيار الأساسي المعتمد
                   </span>
                 </div>
                 <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                  تصدير كتاب الحلول كاملاً بدقة A4 عالية، عرض كامل، خط عربي مريح، وتنسيق أنيق
+                  تصدير الإجابات والحلول فقط بخط مدمج صغير ومنظم وبدون صور المعاينة لتوفير المساحة وسرعة التوليد
                 </p>
               </div>
             </div>

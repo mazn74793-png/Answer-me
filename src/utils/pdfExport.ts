@@ -116,21 +116,27 @@ export async function generateAndDownloadPdf(
         backgroundColor: '#ffffff',
         windowWidth: 1200, // Forces desktop layout queries (no mobile squeezing)
         onclone: (clonedDoc) => {
-          // 1. Sanitize oklch colors inside style elements WITHOUT deleting them.
-          // This keeps 100% of Tailwind flex, grid, spacing, and typography rules intact!
+          // 1. Sanitize modern color functions (oklch, oklab, lch, color-mix) in all style elements
+          const sanitizeColors = (cssText: string) =>
+            cssText
+              .replace(/oklch\([^)]*\)/gi, '#1e293b')
+              .replace(/oklab\([^)]*\)/gi, '#1e293b')
+              .replace(/lch\([^)]*\)/gi, '#1e293b')
+              .replace(/color-mix\([^)]*\)/gi, '#1e293b');
+
           const styleTags = clonedDoc.querySelectorAll('style');
           styleTags.forEach((tag) => {
-            if (tag.textContent && tag.textContent.includes('oklch')) {
-              tag.textContent = tag.textContent.replace(/oklch\([^)]+\)/gi, '#1e293b');
+            if (tag.textContent) {
+              tag.textContent = sanitizeColors(tag.textContent);
             }
           });
 
           // 2. Sanitize any inline styles that might contain oklch
-          const styledElements = clonedDoc.querySelectorAll('[style*="oklch"]');
+          const styledElements = clonedDoc.querySelectorAll('[style]');
           styledElements.forEach((el) => {
             const htmlEl = el as HTMLElement;
-            if (htmlEl.style?.cssText && htmlEl.style.cssText.includes('oklch')) {
-              htmlEl.style.cssText = htmlEl.style.cssText.replace(/oklch\([^)]+\)/gi, '#1e293b');
+            if (htmlEl.style?.cssText && /oklch|oklab|color-mix/i.test(htmlEl.style.cssText)) {
+              htmlEl.style.cssText = sanitizeColors(htmlEl.style.cssText);
             }
           });
 
@@ -146,6 +152,22 @@ export async function generateAndDownloadPdf(
             targetEl.style.opacity = '1';
             targetEl.style.visibility = 'visible';
           }
+
+          // 4. Inject strict print style override
+          const printStyle = clonedDoc.createElement('style');
+          printStyle.textContent = `
+            #${elementId} {
+              width: 794px !important;
+              min-width: 794px !important;
+              max-width: 794px !important;
+              box-sizing: border-box !important;
+              margin: 0 auto !important;
+              background-color: #ffffff !important;
+              color: #0f172a !important;
+              font-family: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+            }
+          `;
+          clonedDoc.head.appendChild(printStyle);
         },
       });
 

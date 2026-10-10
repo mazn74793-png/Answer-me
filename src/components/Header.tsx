@@ -34,8 +34,12 @@ export const Header: React.FC<HeaderProps> = ({
                 · المنصة الأكاديمية لحل الكتب
               </span>
             </div>
-            <p className="text-[11px] text-slate-500 hidden md:block">
-              حل صفحات الكتب وتفريغ الخط اليدوي وتصديرها بصيغ PDF و Word و TXT
+            <p className="text-[11px] text-slate-500 hidden md:flex items-center gap-2">
+              <span>حل صفحات الكتب وتفريغ الخط اليدوي وتصديرها بصيغ PDF و Word و TXT</span>
+              <span className="text-slate-300">·</span>
+              <span className="font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                Made by Mazen Mohamed
+              </span>
             </p>
           </div>
         </div>
