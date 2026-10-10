@@ -1,5 +1,11 @@
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas-pro';
+
+// Ensure jsPDF or any external consumer uses html2canvas-pro
+if (typeof window !== 'undefined') {
+  (window as any).html2canvas = html2canvas;
+}
+
 import {
   Document,
   Packer,

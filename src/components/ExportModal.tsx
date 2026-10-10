@@ -150,26 +150,30 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, pages
         </div>
 
         {/* Export Options Cards */}
-        <div className="space-y-2.5">
-          {/* 1. Vector Print / Instant PDF */}
+        <div className="space-y-3">
+          {/* 1. Direct PDF File (PRIMARY #1) */}
           <button
-            onClick={handlePrint}
-            disabled={completedPages.length === 0}
-            className="w-full text-right p-3.5 rounded-xl bg-emerald-50/60 hover:bg-emerald-50 border border-emerald-300 transition-all flex items-center justify-between group cursor-pointer disabled:opacity-50 shadow-2xs"
+            onClick={handleDownloadPdf}
+            disabled={isExporting || completedPages.length === 0}
+            className="w-full text-right p-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white transition-all flex items-center justify-between group cursor-pointer disabled:opacity-50 shadow-md ring-2 ring-slate-950"
           >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-700 flex items-center justify-center text-white shrink-0 shadow-2xs">
-                <Printer className="w-5 h-5" />
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center text-white shrink-0 shadow-inner">
+                {isExporting ? (
+                  <Loader2 className="w-6 h-6 animate-spin text-emerald-400" />
+                ) : (
+                  <FileText className="w-6 h-6 text-emerald-400" />
+                )}
               </div>
               <div>
-                <div className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <span>حفظ كـ Vector PDF فوري (طباعة المتصفح)</span>
-                  <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded font-bold">
-                    فوري في ثانية واحدة · الأفضل للكتب الكبيرة (88+ صفحة)
+                <div className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                  <span>تحميل ملف PDF مدمج ومفصل (.pdf)</span>
+                  <span className="text-[10px] bg-emerald-500 text-slate-950 font-extrabold px-2 py-0.5 rounded-full">
+                    الخيار الأساسي المعتمد
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-600 mt-0.5">
-                  توليد فوري بدون أي انتظار عبر محرك المتصفح بجودة متجهة فائقة الدقة 100%
+                <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                  تصدير كتاب الحلول كاملاً بدقة A4 عالية، عرض كامل، خط عربي مريح، وتنسيق أنيق
                 </p>
               </div>
             </div>
@@ -189,7 +193,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, pages
                 <div className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-2">
                   <span>مستند Microsoft Word (.docx)</span>
                   <span className="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-semibold border border-blue-200">
-                    توليد فوري في ثانية واحدة
+                    توليد فوري
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-500 mt-0.5">
@@ -199,29 +203,25 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, pages
             </div>
           </button>
 
-          {/* 3. Direct PDF File */}
+          {/* 3. Vector Print / Instant PDF */}
           <button
-            onClick={handleDownloadPdf}
-            disabled={isExporting || completedPages.length === 0}
+            onClick={handlePrint}
+            disabled={completedPages.length === 0}
             className="w-full text-right p-3.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 transition-all flex items-center justify-between group cursor-pointer disabled:opacity-50 shadow-2xs hover:border-slate-300"
           >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white shrink-0 shadow-2xs">
-                {isExporting ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <FileText className="w-5 h-5" />
-                )}
+              <div className="w-10 h-10 rounded-xl bg-emerald-700 flex items-center justify-center text-white shrink-0 shadow-2xs">
+                <Printer className="w-5 h-5" />
               </div>
               <div>
                 <div className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <span>تحميل ملف PDF مدمج (.pdf)</span>
-                  <span className="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-semibold border border-slate-200">
-                    محرك مُسرّع ومضغوط
+                  <span>طباعة المتصفح أو حفظ كـ PDF فوري</span>
+                  <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-bold border border-emerald-200">
+                    طباعة مباشرة
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-500 mt-0.5">
-                  كل صفحة كتاب تقابل صفحة حل مستقلة بنظام A4 مع المعاينة والخط اليدوي
+                  طباعة مباشرة عبر نافذة طباعة المتصفح
                 </p>
               </div>
             </div>
