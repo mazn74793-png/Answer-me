@@ -54,6 +54,7 @@ export default function App() {
   } | null>(null);
 
   const [activeTab, setActiveTab] = useState<'workspace' | 'pdf-preview'>('workspace');
+  const [pdfMode, setPdfMode] = useState<'answers-only' | 'full'>('answers-only');
   const [pdfFontSize, setPdfFontSize] = useState<'compact' | 'standard'>('compact');
   const [showPdfPageThumbnail, setShowPdfPageThumbnail] = useState<boolean>(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
@@ -677,20 +678,49 @@ export default function App() {
             {/* Mode 2: PDF Preview Mode */}
             {activeTab === 'pdf-preview' && (
               <div className="space-y-4">
+                {/* PDF Toolbar */}
                 <div className="bg-white border border-slate-200 p-3.5 sm:p-4 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs text-slate-700 shadow-xs no-print">
                   <div className="flex items-center gap-2">
                     <FileText className="w-4 h-4 text-emerald-700 shrink-0" />
                     <div>
                       <span className="font-bold text-slate-900 block sm:inline">
-                        مستند الإجابات النموذجية فقط:
+                        {pdfMode === 'answers-only' ? 'مستند الإجابات فقط (سريع وموجز):' : 'مستند الحل النموذجي المفصل:'}
                       </span>{' '}
                       <span className="text-slate-600">
-                        تم إزالة صور المعاينة وتصغير الخط ليكون مدمجاً ومناسباً لصفحات A4.
+                        {pdfMode === 'answers-only'
+                          ? 'رقم السؤال والإجابة فقط بدون نص السؤال لتوفير المساحة وتجميع الحلول في صفحة واحدة.'
+                          : 'يشمل نص السؤال الأصلي، والخطوات الكاملة، والشرح والتعليل.'}
                       </span>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 flex-wrap">
+                    {/* PDF Mode Toggle (الإجابات فقط VS حل كامل) */}
+                    <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                      <button
+                        type="button"
+                        onClick={() => setPdfMode('answers-only')}
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                          pdfMode === 'answers-only'
+                            ? 'bg-emerald-600 text-white shadow-2xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        ⚡ الإجابات فقط (موجز)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPdfMode('full')}
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                          pdfMode === 'full'
+                            ? 'bg-slate-900 text-white shadow-2xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        📖 السؤال والحل كاملاً
+                      </button>
+                    </div>
+
                     {/* Font Size Toggle */}
                     <button
                       type="button"
@@ -702,22 +732,24 @@ export default function App() {
                       }`}
                       title="التبديل بين الخط المدمج الصغير والخط القياسي"
                     >
-                      {pdfFontSize === 'compact' ? '🔍 الخط: مدمج صغير' : '🔎 الخط: قياسي'}
+                      {pdfFontSize === 'compact' ? '🔍 خط مدمج' : '🔎 خط قياسي'}
                     </button>
 
                     {/* Thumbnail Toggle */}
-                    <button
-                      type="button"
-                      onClick={() => setShowPdfPageThumbnail((prev) => !prev)}
-                      className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
-                        showPdfPageThumbnail
-                          ? 'bg-blue-50 border-blue-300 text-blue-800'
-                          : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'
-                      }`}
-                      title="إظهار أو إخفاء صورة الصفحة الأصلية من الـ PDF"
-                    >
-                      {showPdfPageThumbnail ? '🖼️ معاينة الصفحة: مفعلة' : '📄 إجابات فقط (بدون صور)'}
-                    </button>
+                    {pdfMode === 'full' && (
+                      <button
+                        type="button"
+                        onClick={() => setShowPdfPageThumbnail((prev) => !prev)}
+                        className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
+                          showPdfPageThumbnail
+                            ? 'bg-blue-50 border-blue-300 text-blue-800'
+                            : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'
+                        }`}
+                        title="إظهار أو إخفاء صورة الصفحة الأصلية من الـ PDF"
+                      >
+                        {showPdfPageThumbnail ? '🖼️ معاينة الصفحة' : '📄 بدون صور'}
+                      </button>
+                    )}
 
                     {/* Open Export Modal */}
                     <button
@@ -725,7 +757,7 @@ export default function App() {
                       className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
                     >
                       <Printer className="w-3.5 h-3.5" />
-                      <span>تنزيل أو طباعة الملف</span>
+                      <span>تنزيل أو طباعة</span>
                     </button>
                   </div>
                 </div>
@@ -735,6 +767,7 @@ export default function App() {
                   pages={pages}
                   fontSize={pdfFontSize}
                   showPageThumbnail={showPdfPageThumbnail}
+                  pdfMode={pdfMode}
                 />
               </div>
             )}
@@ -751,6 +784,7 @@ export default function App() {
               pages={pages}
               fontSize={pdfFontSize}
               showPageThumbnail={showPdfPageThumbnail}
+              pdfMode={pdfMode}
             />
           </div>
         )}
@@ -780,6 +814,8 @@ export default function App() {
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
         pages={pages}
+        pdfMode={pdfMode}
+        onPdfModeChange={setPdfMode}
       />
     </div>
   );

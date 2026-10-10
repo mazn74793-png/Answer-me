@@ -23,9 +23,17 @@ interface ExportModalProps {
   isOpen: boolean;
   onClose: () => void;
   pages: BookPage[];
+  pdfMode?: 'answers-only' | 'full';
+  onPdfModeChange?: (mode: 'answers-only' | 'full') => void;
 }
 
-export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, pages }) => {
+export const ExportModal: React.FC<ExportModalProps> = ({
+  isOpen,
+  onClose,
+  pages,
+  pdfMode = 'answers-only',
+  onPdfModeChange,
+}) => {
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState<string | null>(null);
   const [copiedMd, setCopiedMd] = useState(false);
@@ -36,14 +44,30 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, pages
 
   const completedPages = pages.filter((p) => p.status === 'completed' && p.solution);
 
-  // 1. Download PDF
-  const handleDownloadPdf = async () => {
+  // 1. Download PDF (supports specific mode)
+  const handleDownloadPdf = async (targetMode: 'answers-only' | 'full') => {
+    if (onPdfModeChange) {
+      onPdfModeChange(targetMode);
+    }
+    // Give react time to render the offscreen/preview printable component with targetMode
     setIsExporting(true);
     setError(null);
+    setExportProgress('جاري تحضير التنسيق فائق الدقة...');
+
+    await new Promise((r) => setTimeout(r, 60));
+
     try {
-      await generateAndDownloadPdf(pages, (curr, total, msg) => {
-        setExportProgress(`${msg} (${curr}/${total})`);
-      });
+      const modeLabel = targetMode === 'answers-only' ? 'إجابات-فقط' : 'حلول-كاملة';
+      const timestamp = new Date().toISOString().slice(0, 10);
+      const filename = `حلول-الكتاب-${modeLabel}-${timestamp}.pdf`;
+
+      await generateAndDownloadPdf(
+        pages,
+        (curr, total, msg) => {
+          setExportProgress(`${msg} (${curr}/${total})`);
+        },
+        filename
+      );
       setIsExporting(false);
       setExportProgress(null);
     } catch (err: any) {
@@ -151,14 +175,14 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, pages
 
         {/* Export Options Cards */}
         <div className="space-y-3">
-          {/* 1. Direct PDF File (PRIMARY #1) */}
+          {/* 1. PDF OPTION A: Answers Only (رقم السؤال والإجابة فقط بدون السؤال - خفيف جداً وموجز) */}
           <button
-            onClick={handleDownloadPdf}
+            onClick={() => handleDownloadPdf('answers-only')}
             disabled={isExporting || completedPages.length === 0}
-            className="w-full text-right p-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white transition-all flex items-center justify-between group cursor-pointer disabled:opacity-50 shadow-md ring-2 ring-slate-950"
+            className="w-full text-right p-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white transition-all flex items-center justify-between group cursor-pointer disabled:opacity-50 shadow-md ring-2 ring-emerald-500/80"
           >
             <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center text-white shrink-0 shadow-inner">
+              <div className="w-11 h-11 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-white shrink-0 shadow-inner">
                 {isExporting ? (
                   <Loader2 className="w-6 h-6 animate-spin text-emerald-400" />
                 ) : (
@@ -166,14 +190,38 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, pages
                 )}
               </div>
               <div>
-                <div className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
-                  <span>تحميل ملف PDF مدمج للإجابات النموذجية (.pdf)</span>
-                  <span className="text-[10px] bg-emerald-500 text-slate-950 font-extrabold px-2 py-0.5 rounded-full">
-                    الخيار الأساسي المعتمد
+                <div className="text-sm sm:text-base font-black text-white flex items-center gap-2">
+                  <span>PDF: الإجابات فقط (رقم السؤال + الإجابة)</span>
+                  <span className="text-[10px] bg-emerald-400 text-slate-950 font-black px-2 py-0.5 rounded-full">
+                    موصى به · سريع وموجز
                   </span>
                 </div>
                 <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                  تصدير الإجابات والحلول فقط بخط مدمج صغير ومنظم وبدون صور المعاينة لتوفير المساحة وسرعة التوليد
+                  بدون نص السؤال الطويل! رقم السؤال والإجابة النهائية المعتمدة مباشرة بخط أسود فائق الدقة، يجمع الحلول في مساحة صغيرة دون إهدار صفحات.
+                </p>
+              </div>
+            </div>
+          </button>
+
+          {/* 2. PDF OPTION B: Full Questions & Detailed Solutions */}
+          <button
+            onClick={() => handleDownloadPdf('full')}
+            disabled={isExporting || completedPages.length === 0}
+            className="w-full text-right p-3.5 rounded-xl bg-slate-800/90 hover:bg-slate-800 text-white transition-all flex items-center justify-between group cursor-pointer disabled:opacity-50 shadow-xs border border-slate-700"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-300 shrink-0 shadow-inner">
+                <FileText className="w-5 h-5 text-blue-400" />
+              </div>
+              <div>
+                <div className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
+                  <span>PDF: الأسئلة والحلول النموذجية الكاملة</span>
+                  <span className="text-[10px] bg-blue-500/30 text-blue-200 font-bold px-2 py-0.5 rounded-full border border-blue-400/30">
+                    مفصل وشامل
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-300 mt-0.5 leading-relaxed">
+                  يشمل نص السؤال الأصلي بالكامل، خطوات الحل والبرهان، الشرح والتعليل، والإجابة النهائية المعتمدة بجودة فائقة وتباين عالي.
                 </p>
               </div>
             </div>

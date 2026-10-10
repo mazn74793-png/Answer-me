@@ -80,7 +80,8 @@ function findCleanGap(canvas: HTMLCanvasElement, startY: number, targetHeight: n
 
 export async function generateAndDownloadPdf(
   pages: BookPage[],
-  onProgress?: (current: number, total: number, message: string) => void
+  onProgress?: (current: number, total: number, message: string) => void,
+  customFilename?: string
 ): Promise<void> {
   const completedPages = pages.filter((p) => p.status === 'completed' && p.solution);
 
@@ -110,7 +111,7 @@ export async function generateAndDownloadPdf(
 
     if (element) {
       const canvas = await html2canvas(element, {
-        scale: 1.5, // 1.5x scale delivers high-definition crisp A4 text without memory bloat
+        scale: 2.0, // High-DPI 2x scale: crisp sharp text with zero fuzziness or faintness
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
@@ -119,10 +120,10 @@ export async function generateAndDownloadPdf(
           // 1. Sanitize modern color functions (oklch, oklab, lch, color-mix) in all style elements
           const sanitizeColors = (cssText: string) =>
             cssText
-              .replace(/oklch\([^)]*\)/gi, '#1e293b')
-              .replace(/oklab\([^)]*\)/gi, '#1e293b')
-              .replace(/lch\([^)]*\)/gi, '#1e293b')
-              .replace(/color-mix\([^)]*\)/gi, '#1e293b');
+              .replace(/oklch\([^)]*\)/gi, '#0f172a')
+              .replace(/oklab\([^)]*\)/gi, '#0f172a')
+              .replace(/lch\([^)]*\)/gi, '#0f172a')
+              .replace(/color-mix\([^)]*\)/gi, '#0f172a');
 
           const styleTags = clonedDoc.querySelectorAll('style');
           styleTags.forEach((tag) => {
@@ -153,7 +154,7 @@ export async function generateAndDownloadPdf(
             targetEl.style.visibility = 'visible';
           }
 
-          // 4. Inject strict print style override
+          // 4. Inject strict print style override with strong high-contrast typography
           const printStyle = clonedDoc.createElement('style');
           printStyle.textContent = `
             #${elementId} {
@@ -163,8 +164,15 @@ export async function generateAndDownloadPdf(
               box-sizing: border-box !important;
               margin: 0 auto !important;
               background-color: #ffffff !important;
-              color: #0f172a !important;
+              color: #000000 !important;
               font-family: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+              -webkit-font-smoothing: antialiased !important;
+              -moz-osx-font-smoothing: grayscale !important;
+              text-rendering: optimizeLegibility !important;
+            }
+            #${elementId} * {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
             }
           `;
           clonedDoc.head.appendChild(printStyle);
@@ -180,7 +188,7 @@ export async function generateAndDownloadPdf(
         if (pdfPageCount > 0) {
           pdf.addPage('a4', 'portrait');
         }
-        const imgData = canvas.toDataURL('image/jpeg', 0.90);
+        const imgData = canvas.toDataURL('image/jpeg', 0.98);
         const imgMmHeight = (canvas.height * pdfWidth) / canvas.width;
         // Place full-width at (0, 0)
         pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, Math.min(imgMmHeight, pdfHeight));
@@ -215,7 +223,7 @@ export async function generateAndDownloadPdf(
               0, 0, canvas.width, sliceHeight
             );
 
-            const sliceData = sliceCanvas.toDataURL('image/jpeg', 0.90);
+            const sliceData = sliceCanvas.toDataURL('image/jpeg', 0.98);
             const sliceMmHeight = (sliceHeight * pdfWidth) / canvas.width;
             pdf.addImage(sliceData, 'JPEG', 0, 0, pdfWidth, Math.min(sliceMmHeight, pdfHeight));
           }
@@ -242,7 +250,8 @@ export async function generateAndDownloadPdf(
   }
 
   const timestamp = new Date().toISOString().slice(0, 10);
-  pdf.save(`حلول-الكتاب-صفحة-بصفحة-${timestamp}.pdf`);
+  const finalFilename = customFilename || `حلول-الكتاب-صفحة-بصفحة-${timestamp}.pdf`;
+  pdf.save(finalFilename);
 }
 
 /**
