@@ -1,11 +1,12 @@
 import React from 'react';
-import { Printer, Trash2 } from 'lucide-react';
+import { Printer, Trash2, Check, CloudCheck, HardDrive } from 'lucide-react';
 import { PWAInstallButton } from './PWAInstallButton';
 
 interface HeaderProps {
   totalPages: number;
   solvedPagesCount: number;
   isProcessingAny: boolean;
+  lastSavedTime?: string | null;
   onClearAll: () => void;
   onOpenExportModal: () => void;
 }
@@ -14,6 +15,7 @@ export const Header: React.FC<HeaderProps> = ({
   totalPages,
   solvedPagesCount,
   isProcessingAny,
+  lastSavedTime,
   onClearAll,
   onOpenExportModal,
 }) => {
@@ -46,6 +48,20 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Status, PWA Install & Actions */}
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          {/* Auto-save Status Badge */}
+          {totalPages > 0 && (
+            <div
+              className="text-[11px] sm:text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-xl flex items-center gap-1.5 shadow-2xs font-medium"
+              title="يتم حفظ جميع الصفحات والحلول تلقائياً في المتصفح، ولن تضيع عند إعادة تحميل الصفحة"
+            >
+              <HardDrive className="w-3.5 h-3.5 text-emerald-600" />
+              <span>محفوظ تلقائياً</span>
+              {lastSavedTime && (
+                <span className="text-[10px] text-emerald-600 hidden sm:inline">({lastSavedTime})</span>
+              )}
+            </div>
+          )}
+
           {/* PWA Install Button */}
           <PWAInstallButton />
 

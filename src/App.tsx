@@ -36,6 +36,15 @@ import {
   generateAndDownloadDocx,
   generateAndDownloadTxt,
 } from './utils/pdfExport';
+import {
+  loadSavedPages,
+  savePagesToStorage,
+  clearSavedStorage,
+  loadSettings,
+  saveSettings,
+  loadActivePageIndex,
+  saveActivePageIndex,
+} from './utils/storage';
 
 export default function App() {
   const [pages, setPages] = useState<BookPage[]>([]);
@@ -62,10 +71,99 @@ export default function App() {
   const [showCelebrationBanner, setShowCelebrationBanner] = useState<boolean>(false);
   const [mobileView, setMobileView] = useState<'original' | 'solution'>('solution');
 
+  // Auto-save state
+  const [isLoadedFromStorage, setIsLoadedFromStorage] = useState<boolean>(false);
+  const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
+  const autoSaveTimeoutRef = useRef<any>(null);
+
   const addMoreInputRef = useRef<HTMLInputElement>(null);
   const cancelRequestedRef = useRef<boolean>(false);
   const isPausedRef = useRef<boolean>(false);
   isPausedRef.current = isPaused;
+
+  // 1. Initial Load from browser storage on mount
+  useEffect(() => {
+    async function initFromStorage() {
+      try {
+        const savedPages = await loadSavedPages();
+        if (savedPages && savedPages.length > 0) {
+          setPages(savedPages);
+          const savedIdx = loadActivePageIndex();
+          if (savedIdx >= 0 && savedIdx < savedPages.length) {
+            setActivePageIndex(savedIdx);
+          }
+          const nowStr = new Date().toLocaleTimeString('ar-EG', {
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+          setLastSavedTime(nowStr);
+        }
+
+        const savedSettings = loadSettings();
+        if (savedSettings) {
+          if (savedSettings.solverMode) setSolverMode(savedSettings.solverMode as SolverMode);
+          if (savedSettings.subject) setSubject(savedSettings.subject as SubjectType);
+          if (savedSettings.solutionDepth) setSolutionDepth(savedSettings.solutionDepth as SolutionDepth);
+          if (savedSettings.pdfMode) setPdfMode(savedSettings.pdfMode);
+          if (savedSettings.pdfFontSize) setPdfFontSize(savedSettings.pdfFontSize);
+          if (typeof savedSettings.showPdfPageThumbnail === 'boolean') {
+            setShowPdfPageThumbnail(savedSettings.showPdfPageThumbnail);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load saved state from storage:', err);
+      } finally {
+        setIsLoadedFromStorage(true);
+      }
+    }
+    initFromStorage();
+  }, []);
+
+  // 2. Debounced Auto-save to browser storage whenever pages change
+  useEffect(() => {
+    if (!isLoadedFromStorage) return;
+
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    autoSaveTimeoutRef.current = setTimeout(async () => {
+      try {
+        await savePagesToStorage(pages);
+        saveActivePageIndex(activePageIndex);
+        if (pages.length > 0) {
+          const nowStr = new Date().toLocaleTimeString('ar-EG', {
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+          setLastSavedTime(nowStr);
+        } else {
+          setLastSavedTime(null);
+        }
+      } catch (err) {
+        console.warn('Auto-save error:', err);
+      }
+    }, 600); // 600ms debounce
+
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [pages, activePageIndex, isLoadedFromStorage]);
+
+  // 3. Save settings whenever user toggles preferences
+  useEffect(() => {
+    if (!isLoadedFromStorage) return;
+    saveSettings({
+      solverMode,
+      subject,
+      solutionDepth,
+      pdfMode,
+      pdfFontSize,
+      showPdfPageThumbnail,
+    });
+  }, [solverMode, subject, solutionDepth, pdfMode, pdfFontSize, showPdfPageThumbnail, isLoadedFromStorage]);
 
   const activePage = pages[activePageIndex] || null;
   const completedCount = pages.filter((p) => p.status === 'completed').length;
@@ -297,14 +395,16 @@ export default function App() {
   };
 
   // Clear all pages
-  const handleClearAll = () => {
-    if (window.confirm('هل أنت متأكد من مسح جميع الصفحات والحلول؟')) {
+  const handleClearAll = async () => {
+    if (window.confirm('هل أنت متأكد من مسح جميع الصفحات والحلول المخزنة في المتصفح؟')) {
       cancelRequestedRef.current = true;
       setIsBatchSolving(false);
       setPages([]);
       setActivePageIndex(0);
       setBatchProgress(null);
       setShowCelebrationBanner(false);
+      setLastSavedTime(null);
+      await clearSavedStorage();
     }
   };
 
@@ -377,6 +477,7 @@ export default function App() {
         totalPages={pages.length}
         solvedPagesCount={completedCount}
         isProcessingAny={isAnyProcessing}
+        lastSavedTime={lastSavedTime}
         onClearAll={handleClearAll}
         onOpenExportModal={() => setIsExportModalOpen(true)}
       />
