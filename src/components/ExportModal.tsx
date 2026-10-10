@@ -175,29 +175,29 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
         {/* Export Options Cards */}
         <div className="space-y-3">
-          {/* 1. PDF OPTION A: Answers Only (رقم السؤال والإجابة فقط بدون السؤال - خفيف جداً وموجز) */}
+          {/* 1. PDF OPTION A: Answers Only (Modern Cards - رقم السؤال والإجابة فقط - خفيف وموجز) */}
           <button
             onClick={() => handleDownloadPdf('answers-only')}
             disabled={isExporting || completedPages.length === 0}
-            className="w-full text-right p-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white transition-all flex items-center justify-between group cursor-pointer disabled:opacity-50 shadow-md ring-2 ring-emerald-500/80"
+            className="w-full text-right p-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white transition-all flex items-center justify-between group cursor-pointer disabled:opacity-50 shadow-md ring-2 ring-amber-500/80 border-r-4 border-r-amber-400"
           >
             <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-white shrink-0 shadow-inner">
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-600/30 border border-amber-400/40 flex items-center justify-center text-white shrink-0 shadow-inner">
                 {isExporting ? (
-                  <Loader2 className="w-6 h-6 animate-spin text-emerald-400" />
+                  <Loader2 className="w-6 h-6 animate-spin text-amber-400" />
                 ) : (
-                  <FileText className="w-6 h-6 text-emerald-400" />
+                  <FileText className="w-6 h-6 text-amber-400" />
                 )}
               </div>
               <div>
-                <div className="text-sm sm:text-base font-black text-white flex items-center gap-2">
-                  <span>PDF: الإجابات فقط (رقم السؤال + الإجابة)</span>
-                  <span className="text-[10px] bg-emerald-400 text-slate-950 font-black px-2 py-0.5 rounded-full">
-                    موصى به · سريع وموجز
+                <div className="text-sm sm:text-base font-black text-white flex items-center gap-2 flex-wrap">
+                  <span>PDF: بطاقات الإجابات فقط (Modern Cards ذهبية)</span>
+                  <span className="text-[10px] bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-black px-2 py-0.5 rounded-full shadow-xs">
+                    موصى به · تصميم بطاقات فاخر
                   </span>
                 </div>
                 <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                  بدون نص السؤال الطويل! رقم السؤال والإجابة النهائية المعتمدة مباشرة بخط أسود فائق الدقة، يجمع الحلول في مساحة صغيرة دون إهدار صفحات.
+                  بطاقات منفصلة لكل إجابة مع لمسات ذهبية راقية، بدون نص السؤال الطويل! توفر المساحة وتجمع الحلول في صفحة واحدة بوضوح فائق الدقة.
                 </p>
               </div>
             </div>
@@ -207,21 +207,21 @@ export const ExportModal: React.FC<ExportModalProps> = ({
           <button
             onClick={() => handleDownloadPdf('full')}
             disabled={isExporting || completedPages.length === 0}
-            className="w-full text-right p-3.5 rounded-xl bg-slate-800/90 hover:bg-slate-800 text-white transition-all flex items-center justify-between group cursor-pointer disabled:opacity-50 shadow-xs border border-slate-700"
+            className="w-full text-right p-3.5 rounded-xl bg-slate-800/90 hover:bg-slate-800 text-white transition-all flex items-center justify-between group cursor-pointer disabled:opacity-50 shadow-xs border border-slate-700 border-r-4 border-r-amber-500"
           >
             <div className="flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-300 shrink-0 shadow-inner">
-                <FileText className="w-5 h-5 text-blue-400" />
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-300 shrink-0 shadow-inner">
+                <FileText className="w-5 h-5 text-amber-400" />
               </div>
               <div>
-                <div className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
-                  <span>PDF: الأسئلة والحلول النموذجية الكاملة</span>
-                  <span className="text-[10px] bg-blue-500/30 text-blue-200 font-bold px-2 py-0.5 rounded-full border border-blue-400/30">
+                <div className="text-xs sm:text-sm font-bold text-white flex items-center gap-2 flex-wrap">
+                  <span>PDF: الأسئلة والحلول النموذجية الشاملة (بطاقات عصرية)</span>
+                  <span className="text-[10px] bg-amber-500/20 text-amber-200 font-bold px-2 py-0.5 rounded-full border border-amber-400/30">
                     مفصل وشامل
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-300 mt-0.5 leading-relaxed">
-                  يشمل نص السؤال الأصلي بالكامل، خطوات الحل والبرهان، الشرح والتعليل، والإجابة النهائية المعتمدة بجودة فائقة وتباين عالي.
+                  بطاقات كاملة لكل سؤال مع نص السؤال، وخطوات البرهان، والشرح والتعليل، وإطار ذهبي للإجابة النموذجية المعتمدة.
                 </p>
               </div>
             </div>

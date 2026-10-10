@@ -247,31 +247,33 @@ export const SolutionCard: React.FC<SolutionCardProps> = ({
             return (
               <div
                 key={q.id}
-                className="rounded-xl border border-slate-200 bg-white p-4.5 space-y-3 transition-colors shadow-2xs hover:border-slate-300"
+                className="rounded-xl border border-slate-200/90 border-r-4 border-r-amber-500 bg-white p-4 sm:p-5 space-y-3.5 transition-all shadow-xs hover:shadow-sm"
               >
                 {/* Question Header */}
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-2.5">
-                    <span className="shrink-0 w-6 h-6 rounded-lg bg-slate-900 text-white font-bold text-xs flex items-center justify-center">
+                  <div className="flex items-start gap-3">
+                    {/* Golden Gradient Number Badge */}
+                    <span className="shrink-0 w-7 h-7 rounded-lg bg-gradient-to-br from-amber-700 via-amber-600 to-amber-500 text-white font-black text-xs flex items-center justify-center shadow-xs">
                       {idx + 1}
                     </span>
                     <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-900">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-black text-slate-900">
                           {q.questionNumber || `سؤال ${idx + 1}`}
                         </span>
                         {q.questionType && (
-                          <span className="text-[10px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+                          <span className="text-[10px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200 font-semibold">
                             {q.questionType}
                           </span>
                         )}
                         {q.isUserEdited && (
-                          <span className="text-[10px] text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-200 font-medium">
+                          <span className="text-[10px] text-amber-900 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 font-bold">
                             مُعدّل
                           </span>
                         )}
                       </div>
-                      <p className="text-xs sm:text-sm text-slate-800 mt-1 font-semibold leading-relaxed">
+                      {/* Question Text with comfortable line-height and spacing */}
+                      <p className="text-xs sm:text-sm text-slate-800 mt-2 font-semibold leading-relaxed">
                         {q.originalText}
                       </p>
                     </div>
@@ -282,7 +284,7 @@ export const SolutionCard: React.FC<SolutionCardProps> = ({
                     <button
                       onClick={() => onOpenRefineModal(q)}
                       title="طلب شرح أو صياغة بديلة"
-                      className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors cursor-pointer border border-slate-200"
+                      className="p-1.5 rounded-lg bg-slate-50 hover:bg-amber-50 text-slate-600 hover:text-amber-800 transition-colors cursor-pointer border border-slate-200 hover:border-amber-300"
                     >
                       <Sparkles className="w-3.5 h-3.5" />
                     </button>
@@ -300,23 +302,24 @@ export const SolutionCard: React.FC<SolutionCardProps> = ({
 
                 {/* Multiple choice options if exist */}
                 {q.options && q.options.length > 0 && (
-                  <div className="pr-8 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                  <div className="mr-10 grid grid-cols-1 sm:grid-cols-2 gap-2 p-2.5 rounded-lg bg-slate-50/80 border border-slate-200/80">
                     {q.options.map((opt, oIdx) => (
                       <div
                         key={oIdx}
-                        className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700"
+                        className="text-xs text-slate-700 font-medium flex items-center gap-1.5"
                       >
-                        {opt}
+                        <span className="text-amber-600 text-[10px]">●</span>
+                        <span>{opt}</span>
                       </div>
                     ))}
                   </div>
                 )}
 
-                {/* Solution Box: Final Answer */}
-                <div className="pr-8">
+                {/* Solution Box: Final Answer with Warm Champagne / Gold Accents */}
+                <div className="mr-10">
                   {isEditingThis ? (
-                    <div className="space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                      <label className="text-[11px] text-emerald-800 font-bold block">
+                    <div className="space-y-2 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                      <label className="text-[11px] text-amber-900 font-bold block">
                         الإجابة النهائية:
                       </label>
                       <textarea
@@ -325,7 +328,7 @@ export const SolutionCard: React.FC<SolutionCardProps> = ({
                           setQuestionDraft({ ...questionDraft, finalAnswer: e.target.value })
                         }
                         rows={2}
-                        className="w-full text-xs bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                        className="w-full text-xs bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500"
                       />
                       <label className="text-[11px] text-slate-700 font-bold block">
                         الشرح والتعليل:
@@ -336,7 +339,7 @@ export const SolutionCard: React.FC<SolutionCardProps> = ({
                           setQuestionDraft({ ...questionDraft, explanation: e.target.value })
                         }
                         rows={2}
-                        className="w-full text-xs bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                        className="w-full text-xs bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500"
                       />
                       <div className="flex justify-end gap-2">
                         <button
@@ -354,12 +357,13 @@ export const SolutionCard: React.FC<SolutionCardProps> = ({
                       </div>
                     </div>
                   ) : (
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-3.5">
-                      <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800 mb-1">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>الإجابة النموذجية المعتمدة:</span>
+                    <div className="rounded-xl border border-amber-200/90 border-r-3 border-r-amber-500 bg-amber-50/30 p-3.5 shadow-2xs">
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <span className="text-[10.5px] px-2 py-0.5 rounded-md font-extrabold bg-amber-100 text-amber-900 border border-amber-300/70">
+                          الإجابة النموذجية المعتمدة
+                        </span>
                       </div>
-                      <p className="text-xs sm:text-sm text-emerald-950 font-bold leading-relaxed">
+                      <p className="text-xs sm:text-sm text-slate-950 font-black leading-relaxed">
                         {q.finalAnswer}
                       </p>
                     </div>
@@ -368,13 +372,13 @@ export const SolutionCard: React.FC<SolutionCardProps> = ({
 
                 {/* Step by step */}
                 {q.steps && q.steps.length > 0 && !isEditingThis && (
-                  <div className="pr-8 space-y-1">
-                    <span className="text-[11px] font-bold text-slate-700 block">
+                  <div className="mr-10 p-3 rounded-lg bg-slate-50/70 border border-slate-200/70 space-y-1.5">
+                    <span className="text-[11px] font-bold text-amber-900 block">
                       خطوات الحل التفصيلية:
                     </span>
-                    <ol className="list-decimal list-inside space-y-1 text-xs text-slate-700">
+                    <ol className="list-decimal list-inside space-y-1 text-xs text-slate-700 pr-1">
                       {q.steps.map((st, sIdx) => (
-                        <li key={sIdx} className="leading-relaxed">
+                        <li key={sIdx} className="leading-relaxed font-medium">
                           {st}
                         </li>
                       ))}
@@ -384,17 +388,17 @@ export const SolutionCard: React.FC<SolutionCardProps> = ({
 
                 {/* Explanation */}
                 {q.explanation && !isEditingThis && (
-                  <div className="pr-8 text-xs text-slate-600 leading-relaxed bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-                    <strong className="text-slate-800 font-semibold">الشرح والتعليل: </strong>
+                  <div className="mr-10 text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <strong className="text-slate-900 font-bold">الشرح والتعليل: </strong>
                     {q.explanation}
                   </div>
                 )}
 
                 {/* Tip/Note */}
                 {q.notesOrTips && !isEditingThis && (
-                  <div className="pr-8 flex items-start gap-1.5 text-[11px] text-amber-900">
+                  <div className="mr-10 flex items-start gap-1.5 text-[11px] text-amber-900 bg-amber-50/60 p-2.5 rounded-lg border border-amber-200/60">
                     <Lightbulb className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-600" />
-                    <span>{q.notesOrTips}</span>
+                    <span className="font-medium">{q.notesOrTips}</span>
                   </div>
                 )}
               </div>
