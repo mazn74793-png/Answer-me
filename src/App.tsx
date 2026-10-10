@@ -699,17 +699,15 @@ export default function App() {
           </div>
         )}
 
-        {/* Offscreen / Print layout container so jsPDF and window.print can always capture all pages */}
+        {/* Offscreen & Print layout container: Ensures jsPDF and browser print always access pages cleanly without duplicate DOM IDs */}
         {activeTab !== 'pdf-preview' && completedCount > 0 && (
-          <div className="fixed -left-[9999px] top-0 pointer-events-none opacity-0 select-none">
+          <div
+            className="fixed -left-[9999px] top-0 pointer-events-none opacity-0 select-none print:static print:left-auto print:opacity-100 print:pointer-events-auto print:block"
+            style={{ width: '794px' }}
+          >
             <PrintableBookPdf pages={pages} />
           </div>
         )}
-
-        {/* Native print container */}
-        <div className="hidden print:block">
-          <PrintableBookPdf pages={pages} />
-        </div>
       </main>
 
       {/* Refine Question AI Modal */}

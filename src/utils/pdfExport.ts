@@ -29,14 +29,55 @@ function downloadBlob(blob: Blob, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
+
 /**
- * Exports all completed book pages into a single formatted PDF file.
+ * Helper to find a clean white gap between question cards
+ * so that text is never sliced in half across pages.
  */
+function findCleanGap(canvas: HTMLCanvasElement, startY: number, targetHeight: number): number {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return targetHeight;
+
+  // Search in the bottom 25% of the target height for an empty white gap
+  const searchMin = Math.floor(targetHeight * 0.75);
+  const searchMax = targetHeight - 1;
+
+  // Sample across the middle 60% of the canvas width
+  const sampleX = Math.floor(canvas.width * 0.2);
+  const sampleW = Math.floor(canvas.width * 0.6);
+
+  try {
+    for (let y = searchMax; y >= searchMin; y--) {
+      const currentY = startY + y;
+      if (currentY >= canvas.height) continue;
+
+      const imgData = ctx.getImageData(sampleX, currentY, sampleW, 1).data;
+      let isGap = true;
+      for (let p = 0; p < imgData.length; p += 16) {
+        // If pixel is not white/near-white, it's text or card border
+        if (imgData[p] < 245 || imgData[p + 1] < 245 || imgData[p + 2] < 245) {
+          isGap = false;
+          break;
+        }
+      }
+
+      if (isGap) {
+        return y; // Found clean slice position!
+      }
+    }
+  } catch {
+    return targetHeight;
+  }
+
+  return targetHeight;
+}
+
 export async function generateAndDownloadPdf(
   pages: BookPage[],
   onProgress?: (current: number, total: number, message: string) => void
 ): Promise<void> {
   const completedPages = pages.filter((p) => p.status === 'completed' && p.solution);
+
   if (completedPages.length === 0) {
     throw new Error('لا توجد صفحات مكتملة الحل لتصديرها.');
   }
@@ -45,10 +86,12 @@ export async function generateAndDownloadPdf(
     orientation: 'portrait',
     unit: 'mm',
     format: 'a4',
+    compress: true,
   });
 
   const pdfWidth = 210; // mm
   const pdfHeight = 297; // mm
+  let pdfPageCount = 0;
 
   for (let i = 0; i < completedPages.length; i++) {
     const page = completedPages[i];
@@ -61,56 +104,100 @@ export async function generateAndDownloadPdf(
 
     if (element) {
       const canvas = await html2canvas(element, {
-        scale: 1.25, // Optimized 1.25 scale: fast rendering, crisp A4 quality, lightweight memory
+        scale: 1.5, // 1.5x scale delivers high-definition crisp A4 text without memory bloat
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
+        windowWidth: 1200, // Forces desktop layout queries (no mobile squeezing)
         onclone: (clonedDoc) => {
-          // 1. Remove all external stylesheets/styles that might contain Tailwind OKLCH variables
-          const stylesheets = clonedDoc.querySelectorAll('style, link[rel="stylesheet"]');
-          stylesheets.forEach((s) => s.remove());
-
-          // 2. Scan and sanitize all elements in the cloned DOM to ensure no oklch strings exist
-          const allClonedElements = clonedDoc.querySelectorAll('*');
-          allClonedElements.forEach((el) => {
-            const htmlEl = el as HTMLElement;
-            // Remove Tailwind inline style artifacts if any
-            if (htmlEl.style) {
-              const cssText = htmlEl.style.cssText;
-              if (cssText && cssText.includes('oklch')) {
-                htmlEl.style.cssText = cssText.replace(/oklch\([^)]+\)/gi, '#0f172a');
-              }
+          // 1. Sanitize oklch colors inside style elements WITHOUT deleting them.
+          // This keeps 100% of Tailwind flex, grid, spacing, and typography rules intact!
+          const styleTags = clonedDoc.querySelectorAll('style');
+          styleTags.forEach((tag) => {
+            if (tag.textContent && tag.textContent.includes('oklch')) {
+              tag.textContent = tag.textContent.replace(/oklch\([^)]+\)/gi, '#1e293b');
             }
           });
 
-          // 3. Inject pure, standard CSS without any OKLCH functions
-          const cleanStyle = clonedDoc.createElement('style');
-          cleanStyle.textContent = `
-            * { box-sizing: border-box; }
-            body { font-family: 'Cairo', -apple-system, sans-serif !important; background-color: #ffffff !important; color: #0f172a !important; margin: 0; padding: 0; }
-            .print-page { background-color: #ffffff !important; color: #0f172a !important; font-family: 'Cairo', -apple-system, sans-serif !important; }
-            img { max-width: 100%; height: auto; }
-          `;
-          clonedDoc.head.appendChild(cleanStyle);
+          // 2. Sanitize any inline styles that might contain oklch
+          const styledElements = clonedDoc.querySelectorAll('[style*="oklch"]');
+          styledElements.forEach((el) => {
+            const htmlEl = el as HTMLElement;
+            if (htmlEl.style?.cssText && htmlEl.style.cssText.includes('oklch')) {
+              htmlEl.style.cssText = htmlEl.style.cssText.replace(/oklch\([^)]+\)/gi, '#1e293b');
+            }
+          });
+
+          // 3. Force exact standard A4 width (794px) on the cloned target element
+          const targetEl = clonedDoc.getElementById(elementId);
+          if (targetEl) {
+            targetEl.style.width = '794px';
+            targetEl.style.minWidth = '794px';
+            targetEl.style.maxWidth = '794px';
+            targetEl.style.margin = '0 auto';
+            targetEl.style.boxSizing = 'border-box';
+            targetEl.style.display = 'block';
+            targetEl.style.opacity = '1';
+            targetEl.style.visibility = 'visible';
+          }
         },
       });
 
-      const imgData = canvas.toDataURL('image/jpeg', 0.80);
-      const imgWidth = pdfWidth;
-      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+      // A4 portrait ratio: 297 / 210 = 1.4142857
+      const a4Ratio = pdfHeight / pdfWidth;
+      const pageCanvasHeight = Math.floor(canvas.width * a4Ratio);
 
-      if (i > 0) {
-        pdf.addPage('a4', 'portrait');
-      }
-
-      if (imgHeight <= pdfHeight) {
-        pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+      // If content fits within one A4 page (with a small 5% buffer)
+      if (canvas.height <= pageCanvasHeight * 1.05) {
+        if (pdfPageCount > 0) {
+          pdf.addPage('a4', 'portrait');
+        }
+        const imgData = canvas.toDataURL('image/jpeg', 0.90);
+        const imgMmHeight = (canvas.height * pdfWidth) / canvas.width;
+        // Place full-width at (0, 0)
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, Math.min(imgMmHeight, pdfHeight));
+        pdfPageCount++;
       } else {
-        const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-        const fittedW = imgWidth * ratio;
-        const fittedH = imgHeight * ratio;
-        const marginX = (pdfWidth - fittedW) / 2;
-        pdf.addImage(imgData, 'JPEG', marginX, 0, fittedW, fittedH);
+        // Content exceeds one A4 page: slice cleanly into multiple A4 pages at FULL WIDTH!
+        let sourceY = 0;
+        while (sourceY < canvas.height) {
+          if (pdfPageCount > 0) {
+            pdf.addPage('a4', 'portrait');
+          }
+
+          const remainingHeight = canvas.height - sourceY;
+          let sliceHeight = Math.min(pageCanvasHeight, remainingHeight);
+
+          // If there's more content after this slice, find a clean gap between cards
+          if (sourceY + sliceHeight < canvas.height) {
+            sliceHeight = findCleanGap(canvas, sourceY, sliceHeight);
+          }
+
+          const sliceCanvas = document.createElement('canvas');
+          sliceCanvas.width = canvas.width;
+          sliceCanvas.height = sliceHeight;
+          const sliceCtx = sliceCanvas.getContext('2d');
+
+          if (sliceCtx) {
+            sliceCtx.fillStyle = '#ffffff';
+            sliceCtx.fillRect(0, 0, sliceCanvas.width, sliceHeight);
+            sliceCtx.drawImage(
+              canvas,
+              0, sourceY, canvas.width, sliceHeight,
+              0, 0, canvas.width, sliceHeight
+            );
+
+            const sliceData = sliceCanvas.toDataURL('image/jpeg', 0.90);
+            const sliceMmHeight = (sliceHeight * pdfWidth) / canvas.width;
+            pdf.addImage(sliceData, 'JPEG', 0, 0, pdfWidth, Math.min(sliceMmHeight, pdfHeight));
+          }
+
+          sliceCanvas.width = 0;
+          sliceCanvas.height = 0;
+
+          sourceY += sliceHeight;
+          pdfPageCount++;
+        }
       }
 
       // Free canvas memory immediately
@@ -118,9 +205,7 @@ export async function generateAndDownloadPdf(
       canvas.height = 0;
 
       // Yield briefly to keep UI progress bar responsive
-      if (i % 5 === 0) {
-        await new Promise((r) => setTimeout(r, 10));
-      }
+      await new Promise((r) => setTimeout(r, 15));
     }
   }
 
