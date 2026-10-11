@@ -1,5 +1,5 @@
 import React from 'react';
-import { Printer, Trash2, Check, CloudCheck, HardDrive } from 'lucide-react';
+import { Printer, Trash2, HardDrive, Bell, Sparkles } from 'lucide-react';
 import { PWAInstallButton } from './PWAInstallButton';
 
 interface HeaderProps {
@@ -7,6 +7,9 @@ interface HeaderProps {
   solvedPagesCount: number;
   isProcessingAny: boolean;
   lastSavedTime?: string | null;
+  notificationsCount?: number;
+  activeTasksCount?: number;
+  onOpenNotificationCenter?: () => void;
   onClearAll: () => void;
   onOpenExportModal: () => void;
 }
@@ -16,6 +19,9 @@ export const Header: React.FC<HeaderProps> = ({
   solvedPagesCount,
   isProcessingAny,
   lastSavedTime,
+  notificationsCount = 0,
+  activeTasksCount = 0,
+  onOpenNotificationCenter,
   onClearAll,
   onOpenExportModal,
 }) => {
@@ -28,15 +34,15 @@ export const Header: React.FC<HeaderProps> = ({
             <img src="/pwa-192x192.png" alt="شعار كراستي" className="w-full h-full object-cover" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-base sm:text-lg font-extrabold text-slate-900">
                 حلول كراستي
               </h1>
               <span className="text-[11px] sm:text-xs text-slate-500 font-medium">
                 · المنصة الأكاديمية لحل الكتب
               </span>
             </div>
-            <p className="text-[11px] text-slate-500 hidden md:flex items-center gap-2">
+            <p className="text-[11px] text-slate-500 hidden lg:flex items-center gap-2 mt-0.5">
               <span>حل صفحات الكتب وتفريغ الخط اليدوي وتصديرها بصيغ PDF و Word و TXT</span>
               <span className="text-slate-300">·</span>
               <span className="font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
@@ -46,7 +52,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Status, PWA Install & Actions */}
+        {/* Status, Notifications, PWA Install & Actions */}
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           {/* Auto-save Status Badge */}
           {totalPages > 0 && (
@@ -60,6 +66,34 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="text-[10px] text-emerald-600 hidden sm:inline">({lastSavedTime})</span>
               )}
             </div>
+          )}
+
+          {/* Active Background Tasks Indicator / Notification Center Bell */}
+          {onOpenNotificationCenter && (
+            <button
+              onClick={onOpenNotificationCenter}
+              title="مركز الإشعارات والمهام في الخلفية"
+              className={`relative p-2 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeTasksCount > 0
+                  ? 'bg-amber-500/10 border-amber-400 text-amber-800 ring-2 ring-amber-400/30'
+                  : 'bg-slate-100 hover:bg-slate-200/80 border-slate-200 text-slate-700 hover:text-slate-900'
+              }`}
+            >
+              <Bell className="w-4 h-4" />
+              {activeTasksCount > 0 ? (
+                <div className="flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-amber-600 animate-spin" />
+                  <span className="text-[11px] font-black text-amber-900 hidden sm:inline">
+                    {activeTasksCount} بالخلفية
+                  </span>
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping absolute -top-0.5 -right-0.5" />
+                </div>
+              ) : notificationsCount > 0 ? (
+                <span className="text-[10px] font-bold bg-slate-900 text-white rounded-full px-1.5 py-0.2">
+                  {notificationsCount}
+                </span>
+              ) : null}
+            </button>
           )}
 
           {/* PWA Install Button */}

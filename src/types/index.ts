@@ -35,3 +35,34 @@ export interface BookPage {
 export type SolverMode = 'full-solve' | 'ocr-handwriting' | 'verify-only';
 export type SubjectType = 'general' | 'math_science' | 'languages' | 'humanities';
 export type SolutionDepth = 'detailed' | 'concise' | 'with-explanations';
+
+export type TaskType = 'solving' | 'export-pdf' | 'export-docx' | 'export-txt';
+
+export interface BackgroundTask {
+  id: string;
+  type: TaskType;
+  title: string;
+  description: string;
+  progress: number; // 0 to 100
+  currentStep?: number;
+  totalSteps?: number;
+  status: 'running' | 'paused' | 'completed' | 'error';
+  errorMessage?: string;
+  createdAt: number;
+  completedAt?: number;
+  onPause?: () => void;
+  onResume?: () => void;
+  onCancel?: () => void;
+  onDownload?: () => void;
+}
+
+export interface AppNotification {
+  id: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  title: string;
+  message: string;
+  timestamp: number;
+  read: boolean;
+  actionLabel?: string;
+  onAction?: () => void;
+}

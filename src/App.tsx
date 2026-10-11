@@ -23,6 +23,8 @@ import { SolutionCard } from './components/SolutionCard';
 import { PrintableBookPdf } from './components/PrintableBookPdf';
 import { RefineQuestionModal } from './components/RefineQuestionModal';
 import { ExportModal } from './components/ExportModal';
+import { NotificationCenter } from './components/NotificationCenter';
+import { useBackgroundTaskManager } from './hooks/useBackgroundTaskManager';
 import {
   BookPage,
   QuestionItem,
@@ -75,6 +77,21 @@ export default function App() {
   const [isLoadedFromStorage, setIsLoadedFromStorage] = useState<boolean>(false);
   const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
   const autoSaveTimeoutRef = useRef<any>(null);
+
+  // Background Tasks & Notifications Manager
+  const {
+    tasks,
+    notifications,
+    activeTasksCount,
+    isNotificationPanelOpen,
+    setIsNotificationPanelOpen,
+    startTask,
+    updateTaskProgress,
+    completeTask,
+    failTask,
+    dismissNotification,
+    clearAllNotifications,
+  } = useBackgroundTaskManager();
 
   const addMoreInputRef = useRef<HTMLInputElement>(null);
   const cancelRequestedRef = useRef<boolean>(false);
@@ -270,6 +287,32 @@ export default function App() {
       currentPageNum: queue[0]?.pageNumber || 1,
     });
 
+    const taskId = 'full-book-solve';
+    startTask({
+      id: taskId,
+      type: 'solving',
+      title: `حل صفحات الكتاب (${allPagesList.length} صفحة)`,
+      description: `جاري تشغيل الحل في الخلفية وتفريغ خط اليد...`,
+      totalSteps: total,
+      onPause: () => {
+        setIsPaused(true);
+        updateTaskProgress(taskId, {
+          status: 'paused',
+          description: 'حل الكتاب متوقف مؤقتاً.',
+        });
+      },
+      onResume: () => {
+        setIsPaused(false);
+        updateTaskProgress(taskId, {
+          status: 'running',
+          description: `استئناف حل الكتاب...`,
+        });
+      },
+      onCancel: () => {
+        handleCancelBatchSolve();
+      },
+    });
+
     // Run with concurrency of 4 workers in parallel for 4x speedup on large books
     const concurrency = Math.min(4, queue.length);
     let queueIndex = 0;
@@ -296,10 +339,18 @@ export default function App() {
           solvedSoFar++;
         }
 
+        const pct = Math.min(100, Math.round((solvedSoFar / total) * 100));
+
         setBatchProgress({
           current: solvedSoFar,
           total,
           currentPageNum: currentPage.pageNumber,
+        });
+
+        updateTaskProgress(taskId, {
+          progress: pct,
+          currentStep: solvedSoFar,
+          description: `تم إنجاز ${solvedSoFar} من ${total} صفحة (جاري صفحة ${currentPage.pageNumber})...`,
         });
       }
     };
@@ -314,9 +365,21 @@ export default function App() {
     setIsBatchSolving(false);
     setBatchProgress(null);
 
-    // If all pages completed, trigger celebration banner
+    // If all pages completed, trigger celebration banner and system notification
     if (solvedSoFar >= total && total > 0 && !cancelRequestedRef.current) {
       setShowCelebrationBanner(true);
+      completeTask(taskId, {
+        title: 'تم الانتهاء من حل جميع صفحات الكتاب!',
+        message: `تم حل وتفريغ جميع صفحات الكتاب بالكامل (${total} صفحة) بنجاح.`,
+        actionLabel: 'تصدير PDF الآن',
+        onAction: () => setIsExportModalOpen(true),
+        onDownload: () => handleStartBackgroundExport('pdf-answers'),
+      });
+    } else if (cancelRequestedRef.current) {
+      updateTaskProgress(taskId, {
+        status: 'completed',
+        description: 'تم إيقاف حل الكتاب.',
+      });
     }
   };
 
@@ -413,6 +476,114 @@ export default function App() {
     cancelRequestedRef.current = true;
     setIsBatchSolving(false);
     setBatchProgress(null);
+    updateTaskProgress('full-book-solve', {
+      status: 'completed',
+      description: 'تم إلغاء مهمة حل الكتاب.',
+    });
+  };
+
+  // Start export running in the background with live notification progress & automatic download
+  const handleStartBackgroundExport = async (type: 'pdf-answers' | 'pdf-full' | 'docx' | 'txt') => {
+    setIsExportModalOpen(false); // Close dialog immediately so user is not blocked!
+
+    if (type === 'pdf-answers' || type === 'pdf-full') {
+      const isAnswersOnly = type === 'pdf-answers';
+      setPdfMode(isAnswersOnly ? 'answers-only' : 'full');
+
+      const taskId = `export-pdf-${Date.now()}`;
+      const taskTitle = isAnswersOnly
+        ? 'تصدير PDF (بطاقات الإجابات فقط)'
+        : 'تصدير PDF (الأسئلة والحلول النموذجية)';
+
+      startTask({
+        id: taskId,
+        type: 'export-pdf',
+        title: taskTitle,
+        description: 'جاري تجهيز وتنسيق المستند في الخلفية...',
+        totalSteps: completedCount,
+      });
+
+      // Small delay so React updates and syncs printable container
+      await new Promise((r) => setTimeout(r, 60));
+
+      try {
+        const modeLabel = isAnswersOnly ? 'إجابات-فقط' : 'حلول-كاملة';
+        const timestamp = new Date().toISOString().slice(0, 10);
+        const filename = `حلول-الكتاب-${modeLabel}-${timestamp}.pdf`;
+
+        await generateAndDownloadPdf(
+          pages,
+          (curr, total, msg) => {
+            const pct = Math.round((curr / total) * 100);
+            updateTaskProgress(taskId, {
+              progress: pct,
+              currentStep: curr,
+              description: `${msg} (${curr}/${total})`,
+            });
+          },
+          filename
+        );
+
+        completeTask(taskId, {
+          title: 'تم استخراج وتنزيل ملف الـ PDF بنجاح!',
+          message: `تم تنزيل ملف "${filename}" بدقة فائقة.`,
+          actionLabel: 'تصدير صيغة أخرى',
+          onAction: () => setIsExportModalOpen(true),
+        });
+      } catch (err: any) {
+        console.error(err);
+        failTask(taskId, err?.message || 'تعذر تصدير ملف الـ PDF.');
+      }
+    } else if (type === 'docx') {
+      const taskId = `export-docx-${Date.now()}`;
+      startTask({
+        id: taskId,
+        type: 'export-docx',
+        title: 'استخراج مستند Microsoft Word (.docx)',
+        description: 'جاري بناء هيكل المستند وتنسيق الجداول في الخلفية...',
+        totalSteps: completedCount,
+      });
+
+      try {
+        await generateAndDownloadDocx(pages, (curr, total, msg) => {
+          const pct = Math.round((curr / total) * 100);
+          updateTaskProgress(taskId, {
+            progress: pct,
+            currentStep: curr,
+            description: msg,
+          });
+        });
+
+        completeTask(taskId, {
+          title: 'تم استخراج وتنزيل مستند Word (.docx)!',
+          message: 'تم تجهيز وتنزيل ملف Word بنجاح مع الفواصل والجداول.',
+          actionLabel: 'فتح مركز التصدير',
+          onAction: () => setIsExportModalOpen(true),
+        });
+      } catch (err: any) {
+        console.error(err);
+        failTask(taskId, err?.message || 'تعذر تصدير مستند Word.');
+      }
+    } else if (type === 'txt') {
+      const taskId = `export-txt-${Date.now()}`;
+      startTask({
+        id: taskId,
+        type: 'export-txt',
+        title: 'استخراج الملف النصي (.txt)',
+        description: 'جاري تجميع وحفظ النصوص المفرغة...',
+      });
+
+      try {
+        generateAndDownloadTxt(pages);
+        completeTask(taskId, {
+          title: 'تم تنزيل الملف النصي بنجاح!',
+          message: 'تم حفظ نص الإجابات المفرغة على جهازك.',
+        });
+      } catch (err: any) {
+        console.error(err);
+        failTask(taskId, err?.message || 'تعذر تصدير الملف النصي.');
+      }
+    }
   };
 
   // Update question within current page
@@ -478,6 +649,9 @@ export default function App() {
         solvedPagesCount={completedCount}
         isProcessingAny={isAnyProcessing}
         lastSavedTime={lastSavedTime}
+        notificationsCount={notifications.length}
+        activeTasksCount={activeTasksCount}
+        onOpenNotificationCenter={() => setIsNotificationPanelOpen(true)}
         onClearAll={handleClearAll}
         onOpenExportModal={() => setIsExportModalOpen(true)}
       />
@@ -496,7 +670,7 @@ export default function App() {
               </h2>
               <p className="text-xs sm:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
                 بمجرد رفع ملف الكتاب (PDF متعدد الصفحات) أو الصور، سيبدأ النظام فوراً بحل جميع
-                الصفحات صفحة بصفحة دون توقف، وتفريغ أي كتابة بخط اليد وتجهيز الملف للتنزيل كـ Word أو PDF أو TXT.
+                الصفحات صفحة بصفحة دون توقف في الخلفية، وتفريغ أي كتابة بخط اليد مع إشعارات مباشرة لتقدم التحميل.
               </p>
             </div>
 
@@ -522,28 +696,28 @@ export default function App() {
                       تم الانتهاء من حل جميع صفحات الكتاب بالكامل ({completedCount} صفحة)!
                     </h3>
                     <p className="text-xs text-emerald-800 mt-0.5">
-                      كل صفحة كتاب تم حلها في صفحة حل مستقلة مع تفريغ نصوص خط اليد. الملف جاهز الآن للتحميل الفوري:
+                      كل صفحة كتاب تم حلها في صفحة حل مستقلة مع تفريغ نصوص خط اليد. يمكنك التنزيل فوراً بالخلفية:
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => generateAndDownloadPdf(pages)}
+                    onClick={() => handleStartBackgroundExport('pdf-answers')}
                     className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 cursor-pointer"
                   >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>تحميل PDF</span>
+                    <Download className="w-3.5 h-3.5 text-amber-400" />
+                    <span>تحميل PDF (بالخلفية)</span>
                   </button>
                   <button
-                    onClick={() => generateAndDownloadDocx(pages)}
+                    onClick={() => handleStartBackgroundExport('docx')}
                     className="px-3.5 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 cursor-pointer"
                   >
                     <FileType className="w-3.5 h-3.5" />
                     <span>تحميل Word (.docx)</span>
                   </button>
                   <button
-                    onClick={() => generateAndDownloadTxt(pages)}
+                    onClick={() => handleStartBackgroundExport('txt')}
                     className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 text-xs font-semibold shadow-2xs flex items-center gap-1.5 cursor-pointer"
                   >
                     <FileCode className="w-3.5 h-3.5" />
@@ -917,6 +1091,17 @@ export default function App() {
         pages={pages}
         pdfMode={pdfMode}
         onPdfModeChange={setPdfMode}
+        onStartBackgroundExport={handleStartBackgroundExport}
+      />
+
+      {/* Floating Background Progress Dock & Notifications Center */}
+      <NotificationCenter
+        tasks={tasks}
+        notifications={notifications}
+        isOpen={isNotificationPanelOpen}
+        onClose={() => setIsNotificationPanelOpen(false)}
+        onDismissNotification={dismissNotification}
+        onClearAllNotifications={clearAllNotifications}
       />
     </div>
   );

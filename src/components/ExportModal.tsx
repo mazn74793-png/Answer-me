@@ -25,6 +25,7 @@ interface ExportModalProps {
   pages: BookPage[];
   pdfMode?: 'answers-only' | 'full';
   onPdfModeChange?: (mode: 'answers-only' | 'full') => void;
+  onStartBackgroundExport?: (type: 'pdf-answers' | 'pdf-full' | 'docx' | 'txt') => void;
 }
 
 export const ExportModal: React.FC<ExportModalProps> = ({
@@ -33,6 +34,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   pages,
   pdfMode = 'answers-only',
   onPdfModeChange,
+  onStartBackgroundExport,
 }) => {
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState<string | null>(null);
@@ -49,7 +51,13 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     if (onPdfModeChange) {
       onPdfModeChange(targetMode);
     }
-    // Give react time to render the offscreen/preview printable component with targetMode
+
+    if (onStartBackgroundExport) {
+      onStartBackgroundExport(targetMode === 'answers-only' ? 'pdf-answers' : 'pdf-full');
+      return;
+    }
+
+    // Fallback if not running via background task manager
     setIsExporting(true);
     setError(null);
     setExportProgress('جاري تحضير التنسيق فائق الدقة...');
@@ -80,6 +88,11 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
   // 2. Download Word (.docx)
   const handleDownloadDocx = async () => {
+    if (onStartBackgroundExport) {
+      onStartBackgroundExport('docx');
+      return;
+    }
+
     setIsExporting(true);
     setError(null);
     try {
@@ -98,6 +111,11 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
   // 3. Download Plain Text (.txt)
   const handleDownloadTxt = () => {
+    if (onStartBackgroundExport) {
+      onStartBackgroundExport('txt');
+      return;
+    }
+
     try {
       generateAndDownloadTxt(pages);
     } catch (err: any) {

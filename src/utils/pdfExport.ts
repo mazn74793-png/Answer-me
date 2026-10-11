@@ -162,10 +162,9 @@ export async function generateAndDownloadPdf(
             targetEl.style.backgroundColor = '#ffffff';
           }
 
-          // 4. Inject strict print style override with strong high-contrast solid typography
+          // 4. Inject strict print style override with strong high-contrast solid typography and normal letter spacing
           const printStyle = clonedDoc.createElement('style');
           printStyle.textContent = `
-            @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap');
             #${elementId} {
               width: 794px !important;
               min-width: 794px !important;
@@ -173,53 +172,89 @@ export async function generateAndDownloadPdf(
               box-sizing: border-box !important;
               margin: 0 auto !important;
               background-color: #ffffff !important;
-              color: #000000 !important;
+              color: #0f172a !important;
               font-family: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
               -webkit-font-smoothing: antialiased !important;
               -moz-osx-font-smoothing: grayscale !important;
               text-rendering: optimizeLegibility !important;
+              letter-spacing: normal !important;
+              word-spacing: normal !important;
             }
             #${elementId} * {
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
-            }
-            #${elementId} p, #${elementId} span, #${elementId} div, #${elementId} h1, #${elementId} h2, #${elementId} strong, #${elementId} li {
+              letter-spacing: normal !important;
+              word-spacing: normal !important;
               text-shadow: none !important;
+            }
+            #${elementId} h1, #${elementId} h2, #${elementId} h3 {
+              letter-spacing: normal !important;
+              word-break: normal !important;
+              overflow-wrap: break-word !important;
             }
           `;
           clonedDoc.head.appendChild(printStyle);
         },
       });
 
-      // A4 portrait ratio: 297 / 210 = 1.4142857
-      const a4Ratio = pdfHeight / pdfWidth;
-      const pageCanvasHeight = Math.floor(canvas.width * a4Ratio);
+      // Height in mm if placed at full 210mm width
+      const fullWidthMmHeight = (canvas.height * pdfWidth) / canvas.width;
+      const a4Ratio = pdfHeight / pdfWidth; // 1.4142857
+      const idealCanvasA4Height = Math.floor(canvas.width * a4Ratio);
 
-      // If content fits within one A4 page (with a small 5% buffer)
-      if (canvas.height <= pageCanvasHeight * 1.05) {
+      // STRATEGY:
+      // If content fits within 1 A4 page (or is up to 38% longer, e.g. 7-10 questions with notes):
+      // AUTO-FIT ONTO ONE SINGLE CRISP A4 PAGE!
+      // This completely prevents slicing and stops orphan blank pages with just 'Made by Mazen Mohamed'!
+      if (fullWidthMmHeight <= pdfHeight * 1.38) {
         if (pdfPageCount > 0) {
           pdf.addPage('a4', 'portrait');
         }
-        // Use lossless PNG for pin-sharp, zero-blur text & numbers
+
         const imgData = canvas.toDataURL('image/png');
-        const imgMmHeight = (canvas.height * pdfWidth) / canvas.width;
-        // Place full-width at (0, 0)
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, Math.min(imgMmHeight, pdfHeight), undefined, 'FAST');
+
+        if (fullWidthMmHeight <= pdfHeight) {
+          // Fits directly without scaling
+          pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, fullWidthMmHeight, undefined, 'FAST');
+        } else {
+          // Scale smoothly to fit exactly inside A4 height, preserving aspect ratio and razor-sharp clarity
+          const scale = pdfHeight / fullWidthMmHeight;
+          const scaledWidth = pdfWidth * scale;
+          const scaledHeight = pdfHeight;
+          const offsetX = (pdfWidth - scaledWidth) / 2; // Center horizontally
+          pdf.addImage(imgData, 'PNG', offsetX, 0, scaledWidth, scaledHeight, undefined, 'FAST');
+        }
         pdfPageCount++;
       } else {
-        // Content exceeds one A4 page: slice cleanly into multiple A4 pages at FULL WIDTH!
+        // Exceptionally long content (more than 1.38 A4 pages):
+        // Paginate across multiple pages, but NEVER create an orphan blank page for a small fragment or footer!
         let sourceY = 0;
+
         while (sourceY < canvas.height) {
-          if (pdfPageCount > 0) {
-            pdf.addPage('a4', 'portrait');
+          const remainingHeight = canvas.height - sourceY;
+
+          // If what remains is less than 20% of an A4 page (e.g. just a footer or trailing note):
+          // Do NOT create an orphan blank page! It is already represented or negligible.
+          if (remainingHeight < idealCanvasA4Height * 0.20 && pdfPageCount > 0) {
+            break;
           }
 
-          const remainingHeight = canvas.height - sourceY;
-          let sliceHeight = Math.min(pageCanvasHeight, remainingHeight);
+          let sliceHeight = Math.min(idealCanvasA4Height, remainingHeight);
 
-          // If there's more content after this slice, find a clean gap between cards
+          // If there is still substantial content after this slice, find a clean white gap between cards
           if (sourceY + sliceHeight < canvas.height) {
-            sliceHeight = findCleanGap(canvas, sourceY, sliceHeight);
+            const gapY = findCleanGap(canvas, sourceY, sliceHeight);
+            // If cutting at the gap would leave an orphan sliver (< 20%) for the next page,
+            // bundle the rest into this slice and scale it down slightly to fit!
+            if (canvas.height - (sourceY + gapY) < idealCanvasA4Height * 0.20) {
+              sliceHeight = canvas.height - sourceY;
+            } else {
+              sliceHeight = gapY;
+            }
+          }
+
+          if (pdfPageCount > 0) {
+            pdf.addPage('a4', 'portrait');
           }
 
           const sliceCanvas = document.createElement('canvas');
@@ -236,10 +271,17 @@ export async function generateAndDownloadPdf(
               0, 0, canvas.width, sliceHeight
             );
 
-            // Lossless PNG for crisp contrast
             const sliceData = sliceCanvas.toDataURL('image/png');
             const sliceMmHeight = (sliceHeight * pdfWidth) / canvas.width;
-            pdf.addImage(sliceData, 'PNG', 0, 0, pdfWidth, Math.min(sliceMmHeight, pdfHeight), undefined, 'FAST');
+
+            if (sliceMmHeight > pdfHeight) {
+              const scale = pdfHeight / sliceMmHeight;
+              const scaledW = pdfWidth * scale;
+              const offX = (pdfWidth - scaledW) / 2;
+              pdf.addImage(sliceData, 'PNG', offX, 0, scaledW, pdfHeight, undefined, 'FAST');
+            } else {
+              pdf.addImage(sliceData, 'PNG', 0, 0, pdfWidth, sliceMmHeight, undefined, 'FAST');
+            }
           }
 
           sliceCanvas.width = 0;
