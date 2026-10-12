@@ -32,7 +32,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   isOpen,
   onClose,
   pages,
-  pdfMode = 'answers-only',
+  pdfMode = 'full',
   onPdfModeChange,
   onStartBackgroundExport,
 }) => {
@@ -193,9 +193,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
         {/* Export Options Cards */}
         <div className="space-y-3">
-          {/* 1. PDF OPTION A: Answers Only (Modern Cards - رقم السؤال والإجابة فقط - خفيف وموجز) */}
+          {/* 1. PDF OPTION A: Full Questions & Detailed Solutions (Matching Document Preview Exactly) */}
           <button
-            onClick={() => handleDownloadPdf('answers-only')}
+            onClick={() => handleDownloadPdf('full')}
             disabled={isExporting || completedPages.length === 0}
             className="w-full text-right p-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white transition-all flex items-center justify-between group cursor-pointer disabled:opacity-50 shadow-md ring-2 ring-amber-500/80 border-r-4 border-r-amber-400"
           >
@@ -209,21 +209,21 @@ export const ExportModal: React.FC<ExportModalProps> = ({
               </div>
               <div>
                 <div className="text-sm sm:text-base font-black text-white flex items-center gap-2 flex-wrap">
-                  <span>PDF: بطاقات الإجابات فقط (Modern Cards ذهبية)</span>
+                  <span>PDF: الحل النموذجي الكامل (مطابق لمعاينة المستندات)</span>
                   <span className="text-[10px] bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-black px-2 py-0.5 rounded-full shadow-xs">
-                    موصى به · تصميم بطاقات فاخر
+                    موصى به · نفس شكل العرض والمعاينة تماماً
                   </span>
                 </div>
                 <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                  بطاقات منفصلة لكل إجابة مع لمسات ذهبية راقية، بدون نص السؤال الطويل! توفر المساحة وتجمع الحلول في صفحة واحدة بوضوح فائق الدقة.
+                  نفس التصميم الموجود في صفحة عرض الإجابات ومعاينة المستندات بالظبط: بطاقات عصرية، نص السؤال الأصلي، تفريغ خط اليد، الشرح والخطوات، والإجابة النموذجية المعتمدة.
                 </p>
               </div>
             </div>
           </button>
 
-          {/* 2. PDF OPTION B: Full Questions & Detailed Solutions */}
+          {/* 2. PDF OPTION B: Answers Only (Compact) */}
           <button
-            onClick={() => handleDownloadPdf('full')}
+            onClick={() => handleDownloadPdf('answers-only')}
             disabled={isExporting || completedPages.length === 0}
             className="w-full text-right p-3.5 rounded-xl bg-slate-800/90 hover:bg-slate-800 text-white transition-all flex items-center justify-between group cursor-pointer disabled:opacity-50 shadow-xs border border-slate-700 border-r-4 border-r-amber-500"
           >
@@ -233,13 +233,13 @@ export const ExportModal: React.FC<ExportModalProps> = ({
               </div>
               <div>
                 <div className="text-xs sm:text-sm font-bold text-white flex items-center gap-2 flex-wrap">
-                  <span>PDF: الأسئلة والحلول النموذجية الشاملة (بطاقات عصرية)</span>
+                  <span>PDF: بطاقات الإجابات فقط (موجز وسريع)</span>
                   <span className="text-[10px] bg-amber-500/20 text-amber-200 font-bold px-2 py-0.5 rounded-full border border-amber-400/30">
-                    مفصل وشامل
+                    إجابات فقط
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-300 mt-0.5 leading-relaxed">
-                  بطاقات كاملة لكل سؤال مع نص السؤال، وخطوات البرهان، والشرح والتعليل، وإطار ذهبي للإجابة النموذجية المعتمدة.
+                  رقم السؤال والإجابة المباشرة فقط بدون نص السؤال لتوفير المساحة وتجميع الحلول في صفحة واحدة.
                 </p>
               </div>
             </div>

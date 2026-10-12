@@ -65,7 +65,7 @@ export default function App() {
   } | null>(null);
 
   const [activeTab, setActiveTab] = useState<'workspace' | 'pdf-preview'>('workspace');
-  const [pdfMode, setPdfMode] = useState<'answers-only' | 'full'>('answers-only');
+  const [pdfMode, setPdfMode] = useState<'answers-only' | 'full'>('full');
   const [pdfFontSize, setPdfFontSize] = useState<'compact' | 'standard'>('compact');
   const [showPdfPageThumbnail, setShowPdfPageThumbnail] = useState<boolean>(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
@@ -703,11 +703,11 @@ export default function App() {
 
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => handleStartBackgroundExport('pdf-answers')}
+                    onClick={() => handleStartBackgroundExport('pdf-full')}
                     className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 cursor-pointer"
                   >
                     <Download className="w-3.5 h-3.5 text-amber-400" />
-                    <span>تحميل PDF (بالخلفية)</span>
+                    <span>تحميل PDF الشامل (بالخلفية)</span>
                   </button>
                   <button
                     onClick={() => handleStartBackgroundExport('docx')}
@@ -1052,8 +1052,8 @@ export default function App() {
         {/* Offscreen & Print layout container: Ensures jsPDF and browser print always access pages cleanly without duplicate DOM IDs */}
         {activeTab !== 'pdf-preview' && completedCount > 0 && (
           <div
-            className="fixed -left-[9999px] top-0 pointer-events-none opacity-0 select-none print:static print:left-auto print:opacity-100 print:pointer-events-auto print:block"
-            style={{ width: '794px' }}
+            className="fixed -left-[9999px] -top-[9999px] pointer-events-none select-none z-[-9999] print:static print:left-auto print:top-auto print:z-auto print:pointer-events-auto print:block"
+            style={{ width: '794px', opacity: 1, visibility: 'visible' }}
           >
             <PrintableBookPdf
               pages={pages}

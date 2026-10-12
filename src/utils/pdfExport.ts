@@ -147,9 +147,15 @@ export async function generateAndDownloadPdf(
             }
           });
 
-          // 3. Force exact standard A4 width (794px) on the cloned target element
+          // 3. Force exact standard A4 width (794px) on the cloned target element and ensure all ancestors are visible
           const targetEl = clonedDoc.getElementById(elementId);
           if (targetEl) {
+            let parentNode: HTMLElement | null = targetEl.parentElement;
+            while (parentNode) {
+              parentNode.style.opacity = '1';
+              parentNode.style.visibility = 'visible';
+              parentNode = parentNode.parentElement;
+            }
             targetEl.style.width = '794px';
             targetEl.style.minWidth = '794px';
             targetEl.style.maxWidth = '794px';
